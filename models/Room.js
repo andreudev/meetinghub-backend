@@ -8,6 +8,7 @@ const roomSchema = new mongoose.Schema({
     enum: ["disponible", "ocupada"],
     default: "disponible",
   },
+  ubicacion: { type: String, required: true },
 });
 
 module.exports = mongoose.model("Room", roomSchema);

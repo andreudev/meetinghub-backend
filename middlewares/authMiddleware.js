@@ -1,21 +1,23 @@
 const jwt = require("jsonwebtoken");
 
 const protectRoute = (req, res, next) => {
-  const token = req.header("Authorization");
+  const authHeader = req.header("Authorization");
 
-  if (!token) {
-    return res.status(401).json({ mensaje: "No autorizado, token faltante" });
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res
+      .status(401)
+      .json({ mensaje: "No autorizado, token faltante o formato incorrecto" });
   }
 
+  const token = authHeader.replace("Bearer ", "");
+
   try {
-    const decoded = jwt.verify(
-      token.replace("Bearer ", ""),
-      process.env.JWT_SECRET
-    );
-    req.user = decoded;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // Agregar usuario decodificado a la solicitud
     next();
   } catch (error) {
-    res.status(401).json({ mensaje: "No autorizado, token inválido" });
+    console.error("Error al verificar el token:", error);
+    res.status(401).json({ mensaje: "Token no válido" });
   }
 };
 

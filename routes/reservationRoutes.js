@@ -6,11 +6,12 @@ const router = express.Router();
 
 // Crear una reserva
 router.post("/", protectRoute, async (req, res) => {
-  const { salaId, fecha } = req.body;
+  const { salaId, fecha_inicio, fecha_fin } = req.body;
   const reservation = new Reservation({
     usuarioId: req.user.id,
     salaId,
-    fecha,
+    fecha_inicio,
+    fecha_fin,
   });
   const savedReservation = await reservation.save();
   res.status(201).json(savedReservation);
