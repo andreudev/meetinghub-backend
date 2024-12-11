@@ -25,51 +25,6 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// Listar todos los usuarios (Admin)
-router.get("/", protectRoute, adminRoute, async (req, res) => {
-  try {
-    const users = await User.find({});
-    res.status(200).json(users);
-  } catch (error) {
-    console.error("Error al obtener usuarios:", error);
-    res.status(500).json({ mensaje: "Error en el servidor." });
-  }
-});
-
-// Editar usuario (Admin)
-router.put("/:id", protectRoute, adminRoute, async (req, res) => {
-  const { id } = req.params;
-  const { nombre, correo, rol } = req.body;
-
-  try {
-    const updatedUser = await User.findByIdAndUpdate(
-      id,
-      { nombre, correo, rol },
-      { new: true }
-    );
-    res.status(200).json(updatedUser);
-  } catch (error) {
-    console.error("Error al actualizar usuario:", error);
-    res.status(500).json({ mensaje: "Error en el servidor." });
-  }
-});
-
-// Eliminar usuario (Admin)
-router.delete("/:id", protectRoute, adminRoute, async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const user = await User.findByIdAndDelete(id);
-    if (!user) {
-      return res.status(404).json({ mensaje: "Usuario no encontrado" });
-    }
-    res.status(200).json({ mensaje: "Usuario eliminado" });
-  } catch (error) {
-    console.error("Error al eliminar usuario:", error);
-    res.status(500).json({ mensaje: "Error en el servidor." });
-  }
-});
-
 // Login
 router.post("/login", async (req, res) => {
   const { correo, contraseña } = req.body;
@@ -82,12 +37,23 @@ router.post("/login", async (req, res) => {
         process.env.JWT_SECRET,
         { expiresIn: "1h" }
       );
-      res.status(200).json({ mensaje: "Login exitoso", token });
+      res.status(200).json({ mensaje: "Login exitoso", token, rol: user.rol });
     } else {
       res.status(401).json({ mensaje: "Correo o contraseña incorrectos" });
     }
   } catch (error) {
     console.error("Error en login:", error);
+    res.status(500).json({ mensaje: "Error en el servidor." });
+  }
+});
+
+// Listar todos los usuarios (Admin)
+router.get("/", protectRoute, adminRoute, async (req, res) => {
+  try {
+    const users = await User.find({});
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Error al obtener usuarios:", error);
     res.status(500).json({ mensaje: "Error en el servidor." });
   }
 });
