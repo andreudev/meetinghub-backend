@@ -1,7 +1,7 @@
 const express = require("express");
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
-const { protectRoute } = require("../middlewares/authMiddleware");
+const { protectRoute, adminRoute } = require("../middlewares/authMiddleware");
 
 const router = express.Router();
 
@@ -18,13 +18,54 @@ router.post("/register", async (req, res) => {
     const user = new User({ nombre, correo, contraseña, rol });
     const savedUser = await user.save();
 
-    // expect(response.statusCode).toBe(201);
-    // expect(response.body).toHaveProperty("_id");
-    // expect(response.body.correo).toBe("testuser@example.com");
-    // Sigue el expect en tests/user.test.js
     res.status(201).json(savedUser.toJSON());
   } catch (error) {
     console.error("Error al registrar usuario:", error);
+    res.status(500).json({ mensaje: "Error en el servidor." });
+  }
+});
+
+// Listar todos los usuarios (Admin)
+router.get("/", protectRoute, adminRoute, async (req, res) => {
+  try {
+    const users = await User.find({});
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Error al obtener usuarios:", error);
+    res.status(500).json({ mensaje: "Error en el servidor." });
+  }
+});
+
+// Editar usuario (Admin)
+router.put("/:id", protectRoute, adminRoute, async (req, res) => {
+  const { id } = req.params;
+  const { nombre, correo, rol } = req.body;
+
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { nombre, correo, rol },
+      { new: true }
+    );
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error("Error al actualizar usuario:", error);
+    res.status(500).json({ mensaje: "Error en el servidor." });
+  }
+});
+
+// Eliminar usuario (Admin)
+router.delete("/:id", protectRoute, adminRoute, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const user = await User.findByIdAndDelete(id);
+    if (!user) {
+      return res.status(404).json({ mensaje: "Usuario no encontrado" });
+    }
+    res.status(200).json({ mensaje: "Usuario eliminado" });
+  } catch (error) {
+    console.error("Error al eliminar usuario:", error);
     res.status(500).json({ mensaje: "Error en el servidor." });
   }
 });

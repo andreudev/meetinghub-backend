@@ -6,18 +6,21 @@ const protectRoute = (req, res, next) => {
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res
       .status(401)
-      .json({ mensaje: "No autorizado, token faltante o formato incorrecto" });
+      .json({ mensaje: "No autorizado, token faltante o incorrecto" });
   }
 
-  const token = authHeader.replace("Bearer ", "");
+  const token = authHeader.split(" ")[1]; // Extraer el token después de "Bearer"
 
+  // Verificar el token
   try {
+    // Decodificar el token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // Agregar usuario decodificado a la solicitud
+    req.user = decoded;
     next();
   } catch (error) {
-    console.error("Error al verificar el token:", error);
-    res.status(401).json({ mensaje: "Token no válido" });
+    // Si el token no es válido, devolver un error
+    console.error("Error al verificar el token:", error.message);
+    res.status(401).json({ mensaje: "Token no válido o expirado" });
   }
 };
 

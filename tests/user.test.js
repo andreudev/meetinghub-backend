@@ -1,12 +1,27 @@
 const request = require("supertest");
-const server = "http://localhost:5000";
+const jwt = require("jsonwebtoken"); // Asegúrate de tener instalado jsonwebtoken
+const server = "http://localhost:5000"; // Cambia la URL si tu servidor está en otro puerto
+require("dotenv").config();
 
 describe("Pruebas de autenticación de usuarios", () => {
   let token;
 
-  // Limpieza de datos después de las pruebas (opcional si la base de datos lo requiere)
+  beforeAll(() => {
+    token = null; // Inicializamos el token
+  });
+
+  // Limpieza de datos después de las pruebas
   afterAll(async () => {
-    // Aquí puedes agregar código para limpiar la base de datos si es necesario
+    try {
+      const response = await request(server)
+        .delete("/api/users/testuser@example.com")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.statusCode).toBe(200);
+      expect(response.body.mensaje).toBe("Usuario eliminado");
+    } catch (error) {
+      console.error("Error al eliminar el usuario:", error.message);
+    }
   });
 
   test("Registro de usuario", async () => {
@@ -30,7 +45,7 @@ describe("Pruebas de autenticación de usuarios", () => {
       rol: "usuario",
     });
 
-    expect(response.statusCode).toBe(400); // Dependiendo del comportamiento, puede ser 400 o 409
+    expect(response.statusCode).toBe(400); // O el código que uses para conflictos
     expect(response.body.mensaje).toBe("El correo ya está registrado.");
   });
 
@@ -42,7 +57,7 @@ describe("Pruebas de autenticación de usuarios", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.body.token).toBeDefined();
-    token = response.body.token;
+    token = response.body.token; // Guardamos el token
   });
 
   test("Intentar login con credenciales incorrectas", async () => {
@@ -64,12 +79,36 @@ describe("Pruebas de autenticación de usuarios", () => {
     expect(response.body.correo).toBe("testuser@example.com");
   });
 
+  test("Obtener perfil sin token", async () => {
+    const response = await request(server).get("/api/users/profile");
+
+    expect(response.statusCode).toBe(401);
+    expect(response.body.mensaje).toBe(
+      "No autorizado, token faltante o incorrecto"
+    );
+  });
+
   test("Obtener perfil con token no válido", async () => {
     const response = await request(server)
       .get("/api/users/profile")
       .set("Authorization", "Bearer invalidtoken");
 
     expect(response.statusCode).toBe(401);
-    expect(response.body.mensaje).toBe("Token no válido");
+    expect(response.body.mensaje).toBe("Token no válido o expirado");
+  });
+
+  test("Intentar obtener perfil con token expirado", async () => {
+    const expiredToken = jwt.sign(
+      { id: "testuser_id" },
+      process.env.JWT_SECRET,
+      { expiresIn: "1ms" } // Token que expira inmediatamente
+    );
+
+    const response = await request(server)
+      .get("/api/users/profile")
+      .set("Authorization", `Bearer ${expiredToken}`);
+
+    expect(response.statusCode).toBe(401);
+    expect(response.body.mensaje).toBe("Token no válido o expirado");
   });
 });
