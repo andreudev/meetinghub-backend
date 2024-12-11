@@ -30,4 +30,20 @@ router.put("/:id", protectRoute, adminRoute, async (req, res) => {
   res.status(200).json(updatedRoom);
 });
 
+// Eliminar una sala (Admin)
+router.delete("/:id", protectRoute, adminRoute, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const room = await Room.findByIdAndDelete(id);
+    if (!room) {
+      return res.status(404).json({ mensaje: "Sala no encontrada" });
+    }
+    res.status(200).json({ mensaje: "Sala eliminada" });
+  } catch (error) {
+    console.error("Error al eliminar sala:", error);
+    res.status(500).json({ mensaje: "Error en el servidor." });
+  }
+});
+
 module.exports = router;

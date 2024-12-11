@@ -1,6 +1,5 @@
 const express = require("express");
 const Reservation = require("../models/Reservation");
-const Room = require("../models/Room");
 const { protectRoute } = require("../middlewares/authMiddleware");
 
 const router = express.Router();
@@ -32,7 +31,13 @@ router.post("/", protectRoute, async (req, res) => {
     fecha_fin,
   });
   const savedReservation = await reservation.save();
-  res.status(201).json(savedReservation);
+
+  // Poblar los datos de la sala en la reserva
+  const populatedReservation = await Reservation.findById(
+    savedReservation._id
+  ).populate("salaId");
+
+  res.status(201).json(populatedReservation);
 });
 
 // Listar las reservas del usuario
@@ -69,7 +74,7 @@ router.put("/:id", protectRoute, async (req, res) => {
     id,
     { fecha_inicio, fecha_fin },
     { new: true }
-  );
+  ).populate("salaId");
   res.status(200).json(updatedReservation);
 });
 
