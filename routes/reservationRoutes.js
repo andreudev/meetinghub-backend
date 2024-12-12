@@ -1,6 +1,6 @@
 const express = require("express");
 const Reservation = require("../models/Reservation");
-const { protectRoute } = require("../middlewares/authMiddleware");
+const { protectRoute, adminRoute } = require("../middlewares/authMiddleware");
 
 const router = express.Router();
 
@@ -19,9 +19,7 @@ router.post("/", protectRoute, async (req, res) => {
   });
 
   if (overlappingReservations.length > 0) {
-    return res
-      .status(400)
-      .json({ mensaje: "La sala ya está reservada en ese horario." });
+    return res.status(400).json({ mensaje: "La sala se encuentra ocupada." });
   }
 
   const reservation = new Reservation({
@@ -48,6 +46,12 @@ router.get("/", protectRoute, async (req, res) => {
   res.status(200).json(reservations);
 });
 
+// Listar todas las reservas (Admin)
+router.get("/all", protectRoute, adminRoute, async (req, res) => {
+  const reservations = await Reservation.find({}).populate("salaId usuarioId");
+  res.status(200).json(reservations);
+});
+
 // Editar una reserva
 router.put("/:id", protectRoute, async (req, res) => {
   const { id } = req.params;
@@ -65,9 +69,7 @@ router.put("/:id", protectRoute, async (req, res) => {
   });
 
   if (overlappingReservations.length > 0) {
-    return res
-      .status(400)
-      .json({ mensaje: "La sala ya está reservada en ese horario." });
+    return res.status(400).json({ mensaje: "La sala se encuentra ocupada." });
   }
 
   const updatedReservation = await Reservation.findByIdAndUpdate(

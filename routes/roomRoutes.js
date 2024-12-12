@@ -1,5 +1,6 @@
 const express = require("express");
 const Room = require("../models/Room");
+const Reservation = require("../models/Reservation"); // Importar el modelo Reservation
 const { protectRoute, adminRoute } = require("../middlewares/authMiddleware");
 
 const router = express.Router();
@@ -35,6 +36,16 @@ router.delete("/:id", protectRoute, adminRoute, async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Verificar si hay reservas activas para la sala
+    const activeReservations = await Reservation.find({ salaId: id });
+    if (activeReservations.length > 0) {
+      return res
+        .status(400)
+        .json({
+          mensaje: "La sala tiene reservas activas y no puede ser eliminada.",
+        });
+    }
+
     const room = await Room.findByIdAndDelete(id);
     if (!room) {
       return res.status(404).json({ mensaje: "Sala no encontrada" });
